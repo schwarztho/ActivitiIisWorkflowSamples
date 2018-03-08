@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<glossary xmlns="http://www.ibm.com/is/bg/importexport"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.ibm.com/is/bg/importexport BGSchema.xsd"
+    version="1.6" exportTime="1505287154461" ignoreAssignedAssets="true"
+    ignoreLabeledAssets="true" ignoreAssetCollections="true" ignoreStewards="true">
+    <categories>
+        <category
+            rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" name="root"/>
+    </categories>
+    <terms>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lst7go.49v4vkb.nu01kh.iu64lrgj9s7ii1uelt048"
+            name="Account Number" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lsds12.nij3bp5.2a1upn.q3rouit21g7mssjnc3se8"
+            name="ACTDESC" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lsdr5b.t5j70dn.1guk72.7hrkuvsl7pmo9oqlrb8g8"
+            name="ACTDESCR" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lsdsdi.6tt664o.hife2p.l1bg3rtvthpp0oq3hcoca"
+            name="ACTKWDR" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lsbf40.tsd550s.3l6eoo.9u0c6ddj3q4me2qblc90t"
+            name="ACTNO" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lsdsaj.0foih50.mrt93l.vmqt3hk540772cb5co9ku"
+            name="ACTNOR" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lsbf48.86ri36g.8j7idp.365u6m58hup22forjvrpr"
+            name="ACTNO TEST" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lso2gk.qtekbi7.kohbcm.a2jfqge2jpa7lcv7bhqaj"
+            name="Administrator of Department" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lse3f8.21vu0ol.7gog90.2mad06gr3q8vu8bubioqp"
+            name="Amex" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lsdsp6.dfvav2m.50g21o.v8le8oho3gff1vk026dgb"
+            name="CATALOGR" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lsdtnf.5s1a6pu.o00p3r.ghs6fn16js5g9dmbb9vr7"
+            name="DEPTNAMER" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lsofdr.2re1f6r.nr5v1d.5ara1ekra8brdhmoksluq"
+            name="First Name" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lssbrt.0qt2vab.0471f3.uvf2va4gmr9n8hecnk9k5"
+            name="Name of a Person" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lso2gr.ikdhlra.7f734p.t0e1atiqmt3eaovm5vjgn"
+            name="Name of Department" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lsdssl.iijkb3a.ahkghf.hkruu938te98kqgspj8ld"
+            name="NAMER" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+        <term
+            rid="6662c0f2.e1b1ec6c.ln4lssbuv.k8tafpb.stadtl.5e8e98gjevjcm2crc0d5s"
+            name="Person Name" status="CANDIDATE" type="NONE">
+            <parentCategory
+                rid="6662c0f2.ee6a64fe.ln4lsbf3o.q4fif1k.sgacp3.r835459p7n7krjl49r3vd" identity="root"/>
+        </term>
+    </terms>
+</glossary>

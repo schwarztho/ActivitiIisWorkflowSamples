@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
+  <signal id="IMAM_SHARE_EVENT" name="IMAM_SHARE_EVENT" activiti:scope="global"></signal>
+  <process id="sendNotificationSampleProcess" name="send Notification Sample Process" isExecutable="true">
+    <startEvent id="signalstartevent1" name="Signal start">
+      <signalEventDefinition signalRef="IMAM_SHARE_EVENT"></signalEventDefinition>
+    </startEvent>
+    <scriptTask id="scripttask2" name="Get Asset Details from IGC" scriptFormat="javascript" activiti:autoStoreVariables="false">
+      <script><![CDATA[print("Found IMAM_SHARE_EVENT v171127\n");
+
+ridsArr = [];
+if (typeof createdRIDs !== 'undefined') {
+  ridArr = String(createdRIDs).split(/,/);
+  for (ridIdx in ridArr) {
+    rid = ridArr[ridIdx];
+    colonIdx = rid.indexOf(':');
+    assetRid = rid.substr(colonIdx+1);
+    print('Using created assetRid ' + assetRid + "\n");
+    ridsArr.push(assetRid);
+  }
+}
+if (typeof mergedRIDs !== 'undefined') {
+  ridArr = String(mergedRIDs).split(/,/);
+  for (ridIdx in ridArr) {
+    rid = ridArr[ridIdx];
+    colonIdx = rid.indexOf(':');
+    assetRid = rid.substr(colonIdx+1);
+    print('Using merged assetRid ' + assetRid + "\n");
+    ridsArr.push(assetRid);
+  }
+}
+
+
+url = iisDomain + '/ibm/iis/igc-rest/v1/search/';
+searchParams = {pageSize : 999,
+  properties : [ "name"],
+  types : [ "database_table", "data_file", "data_file_record"],
+  where : {
+    conditions : [ { value : ridsArr, property : "_id", operator : "in"} ],
+    operator : "and"
+  }
+}
+restBody = JSON.stringify(searchParams);
+print('searchParams = ' + restBody + "\n");
+
+execution.setVariable('restUrl', url);
+execution.setVariable('httpMethod', 'POST');
+execution.setVariable('userAliasName', iisUserAliasName);
+execution.setVariable('reqPayload', restBody);
+var headers = new java.util.HashMap();
+headers.put('Content-Type', 'application/json');
+//execution.setVariable('headerMap', headers);
+
+restResponse = sampleRestClient.invokeHTTPEndPoint(restUrl, httpMethod, reqPayload, userAliasName, headers, true);
+
+print('REST response: ' + restResponse + "\n");
+execution.setVariable('restResponse', restResponse);
+]]></script>
+    </scriptTask>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <scriptTask id="scripttask5" name="Format Message" scriptFormat="javascript" activiti:autoStoreVariables="false">
+      <script><![CDATA[searchResult = {items:[]};
+if (typeof restResponse !== 'undefined') {
+  print('Parsing REST response: ' + restResponse + "\n");
+  try {
+    searchResult = JSON.parse(restResponse);
+  } catch (e) {
+    print("Exception occurred while parsing search result for shared IMAM assets: " + restResponse + "\n");
+    print(e);
+  }
+}
+
+print("Formatting Slack message. -- v171127\n");
+
+igcUrlPrefix =  iisDomain + '/ibm/iis/igc/#dossierView/';
+
+message = 'A new IMAM import is available. These assets have been created:\n'; 
+
+for (idx in searchResult['items']) {
+  item = searchResult['items'][idx];
+  print('Using assetRid ' + item['_id'] + "\n");
+
+  assetUrl =  igcUrlPrefix + item['_id'];
+  message += '' + item['_type'] + ' <' + assetUrl + '|' + item['name'] + '> \n';
+}
+execution.setVariable('slackMessage', message);  
+
+]]></script>
+    </scriptTask>
+    <scriptTask id="scripttask6" name="Send Slack notificaton" scriptFormat="javascript" activiti:autoStoreVariables="false">
+      <script><![CDATA[if (typeof slackMessage !== 'undefined') {
+  print("Sending Slack notification.\n");
+
+// ===========================
+var urlStr = configProps.get('com.slack.postmessageurl');
+var message = slackMessage;
+
+var con = new java.net.URL(urlStr).openConnection();
+con.requestMethod = "POST";
+con.setRequestProperty("Content-Type", "application/json");
+con.doOutput=true;
+var body = {text: message};
+var bodyStr = JSON.stringify(body);
+
+var wr = new java.io.DataOutputStream(con.outputStream);
+wr.writeBytes(bodyStr);
+wr.flush();
+wr.close();
+
+   var inReader = new java.io.BufferedReader(new java.io.InputStreamReader(con.inputStream));
+    var inputLine;
+    var response = new java.lang.StringBuffer();
+
+    while ((inputLine = inReader.readLine()) != null) {
+           response.append(inputLine);
+    }
+    inReader.close();
+var responseStr = response.toString();
+
+print("Response Code: " + con.responseCode + "\n");
+print("Response Body: " + responseStr + "\n");
+
+// ------------------------------------
+} else {
+  print("No message found, skipping Slack.\n");
+}
+
+]]></script>
+    </scriptTask>
+    <sequenceFlow id="flow10" sourceRef="scripttask5" targetRef="scripttask6"></sequenceFlow>
+    <sequenceFlow id="flow19" sourceRef="scripttask2" targetRef="scripttask5"></sequenceFlow>
+    <callActivity id="callactivity1" name="initEventProcessHelper" calledElement="initEventProcessHelper">
+      <extensionElements>
+        <activiti:in source="eventPayload" target="eventPayload"></activiti:in>
+        <activiti:out source="configProps" target="configProps"></activiti:out>
+      </extensionElements>
+    </callActivity>
+    <sequenceFlow id="flow20" sourceRef="signalstartevent1" targetRef="callactivity1"></sequenceFlow>
+    <sequenceFlow id="flow21" sourceRef="callactivity1" targetRef="scripttask2"></sequenceFlow>
+    <sequenceFlow id="flow22" sourceRef="scripttask6" targetRef="endevent1"></sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_sendNotificationSampleProcess">
+    <bpmndi:BPMNPlane bpmnElement="sendNotificationSampleProcess" id="BPMNPlane_sendNotificationSampleProcess">
+      <bpmndi:BPMNShape bpmnElement="signalstartevent1" id="BPMNShape_signalstartevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="40.0" y="146.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask2" id="BPMNShape_scripttask2">
+        <omgdc:Bounds height="61.0" width="105.0" x="340.0" y="133.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="850.0" y="146.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask5" id="BPMNShape_scripttask5">
+        <omgdc:Bounds height="61.0" width="105.0" x="520.0" y="133.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask6" id="BPMNShape_scripttask6">
+        <omgdc:Bounds height="61.0" width="105.0" x="670.0" y="133.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="callactivity1" id="BPMNShape_callactivity1">
+        <omgdc:Bounds height="55.0" width="105.0" x="174.0" y="136.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow10" id="BPMNEdge_flow10">
+        <omgdi:waypoint x="625.0" y="163.0"></omgdi:waypoint>
+        <omgdi:waypoint x="670.0" y="163.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow19" id="BPMNEdge_flow19">
+        <omgdi:waypoint x="445.0" y="163.0"></omgdi:waypoint>
+        <omgdi:waypoint x="520.0" y="163.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow20" id="BPMNEdge_flow20">
+        <omgdi:waypoint x="75.0" y="163.0"></omgdi:waypoint>
+        <omgdi:waypoint x="174.0" y="163.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow21" id="BPMNEdge_flow21">
+        <omgdi:waypoint x="279.0" y="163.0"></omgdi:waypoint>
+        <omgdi:waypoint x="340.0" y="163.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow22" id="BPMNEdge_flow22">
+        <omgdi:waypoint x="775.0" y="163.0"></omgdi:waypoint>
+        <omgdi:waypoint x="850.0" y="163.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

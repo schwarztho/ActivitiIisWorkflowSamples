@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
+  <process id="sendIgcNotificationEmailSampleProcess" name="send IGC Notification Email Sample Process" isExecutable="true">
+    <endEvent id="endevent1" name="End"></endEvent>
+    <scriptTask id="scripttask7" name="Get data stewards from IGC" scriptFormat="javascript" activiti:autoStoreVariables="false">
+      <script><![CDATA[print("Getting data stewards for " + ASSET_TYPE + " " + ASSET_NAME + " v171127\n");
+
+recipientTo = '';
+userIds = '';
+recipientToArr = [];
+userIdArr = [];
+
+if ((userIdArr.length == 0) && (recipientToArr.length == 0)) {
+  userIdArr.push('isadmin');
+  print("Adding isadmin as default subscriber for IGC notification emails.\n");
+} else {
+  print("Using properly configured subscribers.\n");
+}
+recipientTo = recipientToArr.join();
+userIds = userIdArr.join();
+print('recipientTo list: ' + recipientTo + "\n");
+print('userIds list: ' + userIds + "\n");
+execution.setVariable("recipientTo",  recipientTo);
+execution.setVariable("userIds",  userIds);
+]]></script>
+    </scriptTask>
+    <sequenceFlow id="flow12" sourceRef="scripttask7" targetRef="scripttask11"></sequenceFlow>
+    <scriptTask id="scripttask9" name="Format Email Message" scriptFormat="javascript" activiti:autoStoreVariables="false">
+      <script><![CDATA[print("Formatting email message.\n");
+
+// set this to 'true' to actually send emails, or to anything else to just log the email message without sending it (useful for debugging)
+execution.setVariable('sendEmail', 'true');
+
+if (recipientTo.length == 0) {
+  // no recipient --> no email
+  execution.setVariable('sendEmail', 'false_noRecipient');
+}
+execution.setVariable("recipientTo",  recipientTo);
+
+if (typeof ASSET_TYPE === 'undefined') {
+  execution.setVariable('ASSET_TYPE', '--');
+}
+if (typeof ASSET_NAME === 'undefined') {
+  execution.setVariable('ASSET_NAME', '--');
+}
+if (typeof ASSET_RID === 'undefined') {
+  execution.setVariable('ASSET_RID', '--');
+}
+if (typeof ASSET_CONTEXT === 'undefined') {
+  execution.setVariable('ASSET_CONTEXT', '--');
+}
+if (typeof ACTION === 'undefined') {
+  execution.setVariable('ACTION', '--');
+}
+]]></script>
+    </scriptTask>
+    <sequenceFlow id="flow13" sourceRef="scripttask11" targetRef="scripttask9"></sequenceFlow>
+    <sequenceFlow id="forkSendEmail" name="sendEmail" sourceRef="exclusivegateway2" targetRef="mailtask1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${sendEmail == 'true'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow15" sourceRef="mailtask1" targetRef="endevent1"></sequenceFlow>
+    <serviceTask id="mailtask1" name="Send email" activiti:type="mail">
+      <extensionElements>
+        <activiti:field name="to">
+          <activiti:expression><![CDATA[${recipientTo}]]></activiti:expression>
+        </activiti:field>
+        <activiti:field name="from">
+          <activiti:expression><![CDATA[IGCNotifier@${iisHostname}]]></activiti:expression>
+        </activiti:field>
+        <activiti:field name="subject">
+          <activiti:expression><![CDATA[An ${ACTION} action has been performed on ${ASSET_TYPE} ${ASSET_NAME}]]></activiti:expression>
+        </activiti:field>
+        <activiti:field name="text">
+          <activiti:expression><![CDATA[An ${ACTION} action has been performed on ${ASSET_TYPE} ${ASSET_NAME}.
+Context is ${ASSET_CONTEXT}
+See here for more details:
+${iisDomain}/ibm/iis/igc/#dossierView/${ASSET_RID}
+]]></activiti:expression>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <exclusiveGateway id="exclusivegateway2" name="Exclusive Gateway" default="forkSkipEmail"></exclusiveGateway>
+    <sequenceFlow id="flow16" sourceRef="scripttask9" targetRef="exclusivegateway2"></sequenceFlow>
+    <scriptTask id="scripttask10" name="Just log email" scriptFormat="javascript" activiti:autoStoreVariables="false">
+      <script><![CDATA[print('Just logging email notification without sending the email; sendEmail=' + sendEmail + "\n");
+print('recipients: ' + recipientTo + "\n");
+]]></script>
+    </scriptTask>
+    <sequenceFlow id="forkSkipEmail" name="skipEmail" sourceRef="exclusivegateway2" targetRef="scripttask10"></sequenceFlow>
+    <sequenceFlow id="flow18" sourceRef="scripttask10" targetRef="endevent1"></sequenceFlow>
+    <scriptTask id="scripttask11" name="Get email for userIds" scriptFormat="javascript" activiti:autoStoreVariables="false">
+      <script><![CDATA[if ((typeof userIds !== 'undefined') && (userIds.length > 0)) {
+	print('Getting email addresses for userIds.\n');
+	userIdArr = String(userIds).split(/,/);
+	print('Number of userIds: ' + userIdArr.length + "\n");
+	
+	url = iisDomain + '/ibm/iis/igc-rest/v1/search/';
+	searchParams = {pageSize : 999,
+			properties : [ "email_address","full_name","principal_id"],
+			types : [ "user"],
+			where : {
+				conditions : [ { value : userIdArr, property : "principal_id",
+					operator : "in"
+				} ],
+				operator : "and"
+			}
+	}
+	restBody = JSON.stringify(searchParams);
+	print('searchParams = ' + restBody + "\n");
+
+	execution.setVariable('restUrl', url);
+	execution.setVariable('httpMethod', 'POST');
+	execution.setVariable('reqPayload', restBody);
+	execution.setVariable('userAliasName', iisUserAliasName);
+	var headers = new java.util.HashMap();
+	headers.put('Content-Type', 'application/json');
+
+	restResponse = sampleRestClient.invokeHTTPEndPoint(restUrl, httpMethod, reqPayload, userAliasName, headers, true);
+	print('REST response: ' + restResponse + "\n");
+
+	recipientToArr = String(recipientTo).split(/,/);     // this is the existing list of subscribers, where we'll add to
+	try {
+		searchResult = JSON.parse(restResponse);
+		itemsArr = searchResult['items'];
+		for (i = 0; i < itemsArr.length; i++ ) {
+			email = itemsArr[i].email_address;
+			if (email.length > 0) {
+				recipientToArr.push(email);
+				userIdx = userIdArr.indexOf(itemsArr[i].principal_id);
+				if (userIdx >= 0) {
+					userIdArr[userIdx] = undefined;
+				}
+		    }
+		}
+	} catch (e) {
+		print("Exception occurred while parsing emails of userIds: " + restResponse + "\n");
+		print(e);
+	}
+	recipientTo = recipientToArr.filter(Boolean).join();   // filter(Boolean) elegantly removes all empty and undefined Strings
+	print('recipientTo list: ' + recipientTo + "\n");
+	execution.setVariable("recipientTo",  recipientTo);	  
+	
+	print('Found no email addresses for these userIds: ' + userIdArr.filter(Boolean).join() + "\n");
+}
+]]></script>
+    </scriptTask>
+    <callActivity id="callactivity1" name="initEventProcessHelper" calledElement="initEventProcessHelper">
+      <extensionElements>
+        <activiti:in source="eventPayload" target="eventPayload"></activiti:in>
+        <activiti:out source="configProps" target="configProps"></activiti:out>
+      </extensionElements>
+    </callActivity>
+    <sequenceFlow id="flow20" sourceRef="startevent1" targetRef="callactivity1"></sequenceFlow>
+    <sequenceFlow id="flow21" sourceRef="callactivity1" targetRef="scripttask7"></sequenceFlow>
+    <startEvent id="startevent1" name="Signal start"></startEvent>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_sendIgcNotificationEmailSampleProcess">
+    <bpmndi:BPMNPlane bpmnElement="sendIgcNotificationEmailSampleProcess" id="BPMNPlane_sendIgcNotificationEmailSampleProcess">
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="1020.0" y="146.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask7" id="BPMNShape_scripttask7">
+        <omgdc:Bounds height="62.0" width="105.0" x="310.0" y="180.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask9" id="BPMNShape_scripttask9">
+        <omgdc:Bounds height="62.0" width="105.0" x="610.0" y="180.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="mailtask1" id="BPMNShape_mailtask1">
+        <omgdc:Bounds height="55.0" width="105.0" x="865.0" y="184.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway2" id="BPMNShape_exclusivegateway2">
+        <omgdc:Bounds height="40.0" width="40.0" x="760.0" y="192.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask10" id="BPMNShape_scripttask10">
+        <omgdc:Bounds height="55.0" width="105.0" x="728.0" y="100.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask11" id="BPMNShape_scripttask11">
+        <omgdc:Bounds height="62.0" width="105.0" x="460.0" y="180.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="callactivity1" id="BPMNShape_callactivity1">
+        <omgdc:Bounds height="55.0" width="105.0" x="140.0" y="183.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="40.0" y="193.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow12" id="BPMNEdge_flow12">
+        <omgdi:waypoint x="415.0" y="211.0"></omgdi:waypoint>
+        <omgdi:waypoint x="460.0" y="211.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow13" id="BPMNEdge_flow13">
+        <omgdi:waypoint x="565.0" y="211.0"></omgdi:waypoint>
+        <omgdi:waypoint x="610.0" y="211.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="forkSendEmail" id="BPMNEdge_forkSendEmail">
+        <omgdi:waypoint x="800.0" y="212.0"></omgdi:waypoint>
+        <omgdi:waypoint x="865.0" y="211.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="48.0" x="800.0" y="212.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow15" id="BPMNEdge_flow15">
+        <omgdi:waypoint x="970.0" y="211.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1037.0" y="181.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow16" id="BPMNEdge_flow16">
+        <omgdi:waypoint x="715.0" y="211.0"></omgdi:waypoint>
+        <omgdi:waypoint x="760.0" y="212.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="forkSkipEmail" id="BPMNEdge_forkSkipEmail">
+        <omgdi:waypoint x="780.0" y="192.0"></omgdi:waypoint>
+        <omgdi:waypoint x="780.0" y="155.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="43.0" x="784.0" y="169.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow18" id="BPMNEdge_flow18">
+        <omgdi:waypoint x="833.0" y="127.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1037.0" y="146.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow20" id="BPMNEdge_flow20">
+        <omgdi:waypoint x="75.0" y="210.0"></omgdi:waypoint>
+        <omgdi:waypoint x="140.0" y="210.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow21" id="BPMNEdge_flow21">
+        <omgdi:waypoint x="245.0" y="210.0"></omgdi:waypoint>
+        <omgdi:waypoint x="310.0" y="211.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
+  <process id="readConfigProps" name="read custom configuration properties file" isExecutable="true">
+    <startEvent id="startevent1" name="Start"></startEvent>
+    <scriptTask id="scripttask1" name="read custom config props" scriptFormat="javascript" activiti:autoStoreVariables="false">
+      <script><![CDATA[var deploymentName = 'sampleConfigProps.bar';
+var configFilename = 'sampleConfig.properties';
+var props = new java.util.Properties();
+var deploymentList = processEngine.getRepositoryService().createDeploymentQuery().deploymentName(deploymentName).orderByDeploymenTime().desc().listPage(0,1);
+if (deploymentList.size() > 0) {
+    var deployment = deploymentList.get(0);
+
+    try {
+    	var instr = processEngine.getRepositoryService().getResourceAsStream(deployment.getId(), configFilename);
+    	if (instr != null) {
+    		props.load(instr);
+    		
+    	} else {
+    		print("Cannot access resource '" + configFilename + "' in deployment '" + deploymentName + "'.");
+    	}
+    } catch (e) {
+		print("Exception while accessing resource '" + configFilename + "' in deployment '" + deploymentName + "'.");
+    	print(e);
+    }
+} else {
+    print("Cannot find deployment '" + deploymentName + "'.");
+}
+
+var iisHostnameKey = 'com.ibm.iis.hostname';
+var iisHostname = java.lang.System.getProperty(iisHostnameKey);
+if (iisHostname != null) {
+  // environment key overrides props file
+  props.setProperty(iisHostnameKey, iisHostname);
+} else if (props.getProperty(iisHostnameKey) == null) {
+  // automatically detect hostname only if not explicitly provided
+  props.setProperty(iisHostnameKey, iisUrlHelper.getIisUrlHostName());
+  print("Using automatically detected IIS hostname.\n");
+}
+if (props.getProperty(iisHostnameKey) == null) {
+  print("WARNING: IIS hostname could not be detected and is not configured. Please configure key " + iisHostnameKey + " in file " + configFilename + " in deployment " + deploymentName + " or as System property.\n");
+}
+
+var iisPortKey = 'com.ibm.iis.port';
+var iisPort = java.lang.System.getProperty(iisPortKey);
+if (iisPort != null) {
+  // environment key overrides props file
+  props.setProperty(iisPortKey, iisPort);
+} else if (props.getProperty(iisPortKey) == null) {
+  // automatically detect port only if not explicitly provided
+  props.setProperty(iisPortKey, iisUrlHelper.getIisUrlPort());
+  print("Using automatically detected IIS port.\n");
+}
+if (props.getProperty(iisPortKey) == null) {
+  print("WARNING: IIS port could not be detected and is not configured. Please configure key " + iisPortKey + " in file " + configFilename + " in deployment " + deploymentName + " or as System property.\n");
+}
+
+execution.setVariable('configProps', props);
+]]></script>
+    </scriptTask>
+    <sequenceFlow id="flow1" sourceRef="startevent1" targetRef="scripttask1"></sequenceFlow>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <sequenceFlow id="flow2" sourceRef="scripttask1" targetRef="endevent1"></sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_readConfigProps">
+    <bpmndi:BPMNPlane bpmnElement="readConfigProps" id="BPMNPlane_readConfigProps">
+      <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="100.0" y="80.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask1" id="BPMNShape_scripttask1">
+        <omgdc:Bounds height="55.0" width="105.0" x="180.0" y="70.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="330.0" y="80.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+        <omgdi:waypoint x="135.0" y="97.0"></omgdi:waypoint>
+        <omgdi:waypoint x="180.0" y="97.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+        <omgdi:waypoint x="285.0" y="97.0"></omgdi:waypoint>
+        <omgdi:waypoint x="330.0" y="97.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
